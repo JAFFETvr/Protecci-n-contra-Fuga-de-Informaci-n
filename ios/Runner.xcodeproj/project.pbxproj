@@ -242,21 +242,6 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
-		DLP0A1B2C3D4E5F6004384FC /* Clean xattrs before signing */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Clean xattrs before signing";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Elimina resource forks y xattrs que bloquean el code signing\nfind \"${CONFIGURATION_BUILD_DIR}\" -name \"._*\" -delete 2>/dev/null\nfind \"${CONFIGURATION_BUILD_DIR}\" -print0 2>/dev/null | xargs -0 xattr -c 2>/dev/null\nfind \"${BUILT_PRODUCTS_DIR}\" -name \"._*\" -delete 2>/dev/null\nfind \"${BUILT_PRODUCTS_DIR}\" -print0 2>/dev/null | xargs -0 xattr -c 2>/dev/null\ntrue\n";
-		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -271,6 +256,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		DLP0A1B2C3D4E5F6004384FC /* Clean xattrs before signing */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Clean xattrs before signing";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Elimina resource forks y xattrs que bloquean el code signing\nfind \"${CONFIGURATION_BUILD_DIR}\" -name \"._*\" -delete 2>/dev/null\nfind \"${CONFIGURATION_BUILD_DIR}\" -print0 2>/dev/null | xargs -0 xattr -c 2>/dev/null\nfind \"${BUILT_PRODUCTS_DIR}\" -name \"._*\" -delete 2>/dev/null\nfind \"${BUILT_PRODUCTS_DIR}\" -print0 2>/dev/null | xargs -0 xattr -c 2>/dev/null\ntrue\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -382,14 +382,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = 36G435JUQG;
+				DEVELOPMENT_TEAM = 4T3QF2ULFL;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.miAppDlp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaffetv.miAppDlp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -562,14 +562,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = 36G435JUQG;
+				DEVELOPMENT_TEAM = 4T3QF2ULFL;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.miAppDlp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaffetv.miAppDlp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -585,14 +585,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = 36G435JUQG;
+				DEVELOPMENT_TEAM = 4T3QF2ULFL;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.miAppDlp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaffetv.miAppDlp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
