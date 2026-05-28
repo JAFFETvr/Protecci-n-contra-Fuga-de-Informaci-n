@@ -18,6 +18,9 @@ class _LoginScreenState extends State<LoginScreen>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
+  
+  // Canal de comunicación con Android
+  static const platform = MethodChannel('com.example.mi_app_dlp/security');
 
   @override
   void initState() {
@@ -34,6 +37,9 @@ class _LoginScreenState extends State<LoginScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+    
+    // Activar protección contra captura de pantalla al entrar
+    _setSecureFlag(true);
   }
 
   @override
@@ -41,7 +47,17 @@ class _LoginScreenState extends State<LoginScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _animController.dispose();
+    // Desactivar protección contra captura de pantalla al salir
+    _setSecureFlag(false);
     super.dispose();
+  }
+
+  Future<void> _setSecureFlag(bool secure) async {
+    try {
+      await platform.invokeMethod('setSecureFlag', {'secure': secure});
+    } catch (e) {
+      print('Error al establecer FLAG_SECURE: $e');
+    }
   }
 
   Future<void> _login() async {

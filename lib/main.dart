@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:io';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/dashboard_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -13,14 +15,55 @@ void main() {
       systemNavigationBarColor: Color(0xFF0D0D0D),
     ),
   );
-  runApp(const MyApp());
+  
+  // Validar Fake GPS antes de iniciar la app
+  bool fakeGpsDetected = await isFakeGpsDetected();
+  
+  runApp(MyApp(fakeGpsDetected: fakeGpsDetected));
+}
+
+Future<bool> isFakeGpsDetected() async {
+  try {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    
+    if (permission == LocationPermission.denied || 
+        permission == LocationPermission.deniedForever) {
+      return false;
+    }
+    
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 5),
+      );
+      return position.isMocked;
+    } catch (_) {
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool fakeGpsDetected;
+  
+  const MyApp({super.key, this.fakeGpsDetected = false});
 
   @override
   Widget build(BuildContext context) {
+    if (fakeGpsDetected) {
+      return MaterialApp(
+        title: 'DLP Seguro',
+        debugShowCheckedModeBanner: false,
+        theme: _buildDarkTheme(),
+        home: const FakeGpsDetectedScreen(),
+      );
+    }
+
     return MaterialApp(
       title: 'DLP Seguro',
       debugShowCheckedModeBanner: false,
@@ -106,6 +149,53 @@ class MyApp extends StatelessWidget {
         ),
         iconTheme: IconThemeData(color: Colors.white),
         systemOverlayStyle: SystemUiOverlayStyle.light,
+      ),
+    );
+  }
+}
+
+class FakeGpsDetectedScreen extends StatelessWidget {
+  const FakeGpsDetectedScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.location_off, size: 80, color: Color(0xFFFF4757)),
+            const SizedBox(height: 24),
+            const Text(
+              'Fake GPS Detectado',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFFF4757),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'Esta aplicación no puede ejecutarse en un dispositivo con GPS simulado habilitado.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                exit(0);
+              },
+              icon: const Icon(Icons.exit_to_app),
+              label: const Text('Cerrar Aplicación'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF4757),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
