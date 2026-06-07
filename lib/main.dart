@@ -5,6 +5,8 @@ import 'dart:io';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'services/session_service.dart';
+import 'widgets/inactivity_detector.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,25 +17,25 @@ void main() async {
       systemNavigationBarColor: Color(0xFF0D0D0D),
     ),
   );
-  
-  // Validar Fake GPS antes de iniciar la app
+
   bool fakeGpsDetected = await isFakeGpsDetected();
-  
+
   runApp(MyApp(fakeGpsDetected: fakeGpsDetected));
 }
 
 Future<bool> isFakeGpsDetected() async {
+  if (Platform.isIOS) return false;
+
   try {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-    
-    if (permission == LocationPermission.denied || 
+
+    if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
       return false;
     }
-    
     try {
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -50,7 +52,7 @@ Future<bool> isFakeGpsDetected() async {
 
 class MyApp extends StatelessWidget {
   final bool fakeGpsDetected;
-  
+
   const MyApp({super.key, this.fakeGpsDetected = false});
 
   @override
@@ -64,16 +66,22 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    return MaterialApp(
-      title: 'DLP Seguro',
-      debugShowCheckedModeBanner: false,
-      theme: _buildDarkTheme(),
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
-      },
+    final navigatorKey = GlobalKey<NavigatorState>();
+    SessionService.instance.navigatorKey = navigatorKey;
+
+    return InactivityDetector(
+      child: MaterialApp(
+        title: 'DLP Seguro',
+        debugShowCheckedModeBanner: false,
+        theme: _buildDarkTheme(),
+        navigatorKey: navigatorKey,
+        initialRoute: '/login',
+        routes: {
+          '/login': (context) => const LoginScreen(),
+          '/register': (context) => const RegisterScreen(),
+          '/dashboard': (context) => const DashboardScreen(),
+        },
+      ),
     );
   }
 
@@ -96,7 +104,8 @@ class MyApp extends StatelessWidget {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -111,11 +120,13 @@ class MyApp extends StatelessWidget {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFFF4757), width: 1),
+          borderSide:
+              const BorderSide(color: Color(0xFFFF4757), width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFFF4757), width: 1.5),
+          borderSide:
+              const BorderSide(color: Color(0xFFFF4757), width: 1.5),
         ),
         labelStyle: const TextStyle(color: Color(0xFF777777)),
         errorStyle: const TextStyle(color: Color(0xFFFF4757)),
@@ -125,7 +136,8 @@ class MyApp extends StatelessWidget {
           backgroundColor: primary,
           foregroundColor: Colors.white,
           disabledBackgroundColor: primary.withAlpha(100),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 0,
           textStyle: const TextStyle(

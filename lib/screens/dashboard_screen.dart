@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/session_service.dart';
+import '../widgets/inactivity_detector.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -16,8 +18,11 @@ class DashboardScreen extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.logout_rounded),
               tooltip: 'Cerrar sesión',
-              onPressed: () =>
-                  Navigator.pushReplacementNamed(context, '/login'),
+              onPressed: () {
+                SessionService.instance.logout( /////////
+                  reason: SessionCloseReason.manual,
+                );
+              },
             ),
           ],
         ),
@@ -38,6 +43,8 @@ class _DashboardBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _WelcomeBanner(),
+          const SizedBox(height: 20),
+          const _InactivityTimer(),
           const SizedBox(height: 28),
           _SectionTitle(title: 'Estado de seguridad'),
           const SizedBox(height: 14),
@@ -51,6 +58,118 @@ class _DashboardBody extends StatelessWidget {
     );
   }
 }
+
+// ────────────────────────────────────────────────────────────────
+// Widget: Contador de inactividad
+// ────────────────────────────────────────────────────────────────
+
+class _InactivityTimer extends StatelessWidget {
+  const _InactivityTimer();
+
+  @override
+  Widget build(BuildContext context) {
+    final detector = InactivityDetector.of(context);
+
+    if (detector == null) return const SizedBox.shrink();
+
+    return ValueListenableBuilder<int>(
+      valueListenable: detector.secondsRemaining,
+      builder: (context, seconds, _) {
+        final total = kInactivityTimeout.inSeconds;
+        final progress = seconds / total;
+        final isWarning = seconds <= 5;
+
+        final barColor = isWarning
+            ? const Color(0xFFFF4757)
+            : const Color(0xFF7B61FF);
+        final bgColor = isWarning
+            ? const Color(0xFFFF4757).withAlpha(20)
+            : const Color(0xFF7B61FF).withAlpha(20);
+        final borderColor = isWarning
+            ? const Color(0xFFFF4757).withAlpha(80)
+            : const Color(0xFF7B61FF).withAlpha(60);
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isWarning
+                        ? Icons.timer_off_rounded
+                        : Icons.timer_rounded,
+                    color: barColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isWarning
+                          ? '⚠️  Sesión expirará pronto'
+                          : 'Tiempo de sesión activa',
+                      style: TextStyle(
+                        color: barColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: barColor.withAlpha(30),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${seconds}s',
+                      style: TextStyle(
+                        color: barColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 4,
+                  backgroundColor: barColor.withAlpha(30),
+                  valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Toca la pantalla para mantener la sesión activa.',
+                style: TextStyle(
+                  color: barColor.withAlpha(160),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────
+// Widgets existentes (sin cambios de lógica)
+// ────────────────────────────────────────────────────────────────
 
 class _WelcomeBanner extends StatelessWidget {
   @override
@@ -144,6 +263,12 @@ class _SecurityStatusCard extends StatelessWidget {
             label: 'Sesión cifrada',
             active: true,
           ),
+          Divider(color: Color(0xFF2A2A2A), height: 24),
+          _StatusRow(
+            icon: Icons.timer_rounded,
+            label: 'Cierre por inactividad (15s)',
+            active: true,
+          ),
         ],
       ),
     );
@@ -162,7 +287,8 @@ class _StatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF00C853) : const Color(0xFFFF4757);
+    final color =
+        active ? const Color(0xFF00C853) : const Color(0xFFFF4757);
     return Row(
       children: [
         Icon(icon, color: const Color(0xFF777777), size: 20),
@@ -174,7 +300,8 @@ class _StatusRow extends StatelessWidget {
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: color.withAlpha(30),
             borderRadius: BorderRadius.circular(20),

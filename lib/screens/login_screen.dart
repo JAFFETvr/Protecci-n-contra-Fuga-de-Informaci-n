@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/session_service.dart';
+import '../services/secure_storage_service.dart';
+import '../widgets/inactivity_detector.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,9 +22,14 @@ class _LoginScreenState extends State<LoginScreen>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
-  
+
   // Canal de comunicación con Android
   static const platform = MethodChannel('com.example.mi_app_dlp/security');
+
+  // Datos de la última sesión cerrada (leídos desde Keychain)
+  StoredSession? _lastSession;
+  // Razón por la que se cerró la última sesión
+  SessionCloseReason _closeReason = SessionCloseReason.none;
 
   @override
   void initState() {
@@ -37,9 +46,14 @@ class _LoginScreenState extends State<LoginScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
-    
-    // Activar protección contra captura de pantalla al entrar
+
     _setSecureFlag(true);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      InactivityDetector.of(context)?.pauseTimer();
+    });
+
+    _loadLastSession();
   }
 
   @override
@@ -47,26 +61,45 @@ class _LoginScreenState extends State<LoginScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _animController.dispose();
-    // Desactivar protección contra captura de pantalla al salir
     _setSecureFlag(false);
     super.dispose();
   }
 
+  Future<void> _loadLastSession() async {
+    final session = await SecureStorageService.instance.readSession();
+    if (!mounted) return;
+    setState(() {
+      _lastSession = session;
+      _closeReason = SessionService.instance.lastCloseReason;
+    });
+  }
+
   Future<void> _setSecureFlag(bool secure) async {
+    if (!Platform.isAndroid) return;
     try {
       await platform.invokeMethod('setSecureFlag', {'secure': secure});
     } catch (e) {
-      print('Error al establecer FLAG_SECURE: $e');
+      debugPrint('Error al establecer FLAG_SECURE: $e');
     }
   }
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    // Simulated authentication delay
+
     await Future.delayed(const Duration(milliseconds: 1200));
     if (!mounted) return;
+
     setState(() => _isLoading = false);
+
+    final token = 'dlp_token_${DateTime.now().millisecondsSinceEpoch}';
+
+    SessionService.instance.startSession(token);
+    InactivityDetector.of(context)?.resetTimer();
+
+    await SecureStorageService.instance.clearSession();
+
+    if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
@@ -92,7 +125,17 @@ class _LoginScreenState extends State<LoginScreen>
                     children: [
                       const SizedBox(height: 48),
                       _buildLogo(),
-                      const SizedBox(height: 48),
+                      const SizedBox(height: 24),
+                      // Banner de sesión expirada (visible solo si aplica)
+                      if (_lastSession != null &&
+                          _closeReason == SessionCloseReason.inactivity)
+                        _buildInactivityBanner(),
+                      if (_lastSession != null &&
+                          _closeReason == SessionCloseReason.inactivity)
+                        const SizedBox(height: 24),
+                      if (_lastSession == null ||
+                          _closeReason != SessionCloseReason.inactivity)
+                        const SizedBox(height: 24),
                       _buildEmailField(),
                       const SizedBox(height: 16),
                       _buildPasswordField(),
@@ -111,6 +154,55 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // Widgets
+  // ────────────────────────────────────────────────────────────────
+
+  Widget _buildInactivityBanner() {
+    final closedAt = _lastSession!.closedAt;
+    final timeStr =
+        '${closedAt.hour.toString().padLeft(2, '0')}:${closedAt.minute.toString().padLeft(2, '0')}:${closedAt.second.toString().padLeft(2, '0')}';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFB300).withAlpha(20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFB300).withAlpha(80)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.timer_off_rounded,
+              color: Color(0xFFFFB300), size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sesión cerrada por inactividad',
+                  style: TextStyle(
+                    color: Color(0xFFFFB300),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Tu sesión expiró a las $timeStr por inactividad de 15 segundos.',
+                  style: const TextStyle(
+                    color: Color(0xFF999999),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -167,7 +259,8 @@ class _LoginScreenState extends State<LoginScreen>
       style: const TextStyle(color: Colors.white, fontSize: 15),
       decoration: const InputDecoration(
         labelText: 'Correo electrónico',
-        prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF555555), size: 20),
+        prefixIcon:
+            Icon(Icons.email_outlined, color: Color(0xFF555555), size: 20),
       ),
       validator: (v) {
         if (v == null || v.trim().isEmpty) return 'Ingresa tu correo';
@@ -281,7 +374,8 @@ class _LoginScreenState extends State<LoginScreen>
       ),
       child: const Row(
         children: [
-          Icon(Icons.no_photography_outlined, color: Color(0xFF555555), size: 18),
+          Icon(Icons.no_photography_outlined,
+              color: Color(0xFF555555), size: 18),
           SizedBox(width: 10),
           Expanded(
             child: Text(
