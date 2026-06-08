@@ -5,6 +5,10 @@ import 'dart:io';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'widgets/session_timeout_wrapper.dart';
+
+// Llave global para navegar sin context desde el timer
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +20,6 @@ void main() async {
     ),
   );
   
-  // Validar Fake GPS antes de iniciar la app
   bool fakeGpsDetected = await isFakeGpsDetected();
   
   runApp(MyApp(fakeGpsDetected: fakeGpsDetected));
@@ -64,16 +67,34 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    return MaterialApp(
-      title: 'DLP Seguro',
-      debugShowCheckedModeBanner: false,
-      theme: _buildDarkTheme(),
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
+    return SessionTimeoutWrapper(
+      timeout: const Duration(seconds: 15), // Tiempo de inactividad ajustable
+      onLogout: () {
+        // Redirigir al login y limpiar el historial de navegación
+        navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+        
+        // Mostrar mensaje informativo
+        if (navigatorKey.currentContext != null) {
+          ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+            const SnackBar(
+              content: Text('Sesión cerrada por inactividad'),
+              backgroundColor: Color(0xFFFF4757),
+            ),
+          );
+        }
       },
+      child: MaterialApp(
+        navigatorKey: navigatorKey, // Asignar la llave global aquí
+        title: 'DLP Seguro',
+        debugShowCheckedModeBanner: false,
+        theme: _buildDarkTheme(),
+        initialRoute: '/login',
+        routes: {
+          '/login': (context) => const LoginScreen(),
+          '/register': (context) => const RegisterScreen(),
+          '/dashboard': (context) => const DashboardScreen(),
+        },
+      ),
     );
   }
 
