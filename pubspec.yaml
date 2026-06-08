@@ -31,10 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   geolocator: ^9.0.2
-<<<<<<< HEAD
-=======
   # Almacén encriptado — usa iOS Keychain en iOS, EncryptedSharedPreferences en Android
->>>>>>> 1124deb9a7c1c45bf63d785177533b9936b1a80f
   flutter_secure_storage: ^9.2.2
 
   # The following adds the Cupertino Icons font to your application.
