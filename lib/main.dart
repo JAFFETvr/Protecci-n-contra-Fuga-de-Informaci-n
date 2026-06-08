@@ -30,8 +30,25 @@ void main() async {
   
   // Configurar background handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
-  // Solicitar permisos de notificación
+
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Color(0xFF0D0D0D),
+    ),
+  );
+
+  bool fakeGpsDetected = await isFakeGpsDetected();
+
+  runApp(MyApp(fakeGpsDetected: fakeGpsDetected));
+
+  // Inicializaciones asíncronas que no deben bloquear la carga de la UI
+  _initializePostLaunch();
+}
+
+Future<void> _initializePostLaunch() async {
+  // Solicitar permisos de notificación con la UI ya renderizada
   await FirebaseMessaging.instance.requestPermission();
   
   // Obtener e imprimir el token FCM para pruebas
@@ -53,18 +70,6 @@ void main() async {
       await SecureStorageService.instance.wipeData();
     }
   });
-
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF0D0D0D),
-    ),
-  );
-
-  bool fakeGpsDetected = await isFakeGpsDetected();
-
-  runApp(MyApp(fakeGpsDetected: fakeGpsDetected));
 }
 
 Future<bool> isFakeGpsDetected() async {
