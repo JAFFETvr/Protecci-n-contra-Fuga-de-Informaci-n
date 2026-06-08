@@ -40,6 +40,14 @@ class SecureStorageService {
     print('📊 Estado actual del Secure Storage: $allValues');
   }
 
+  // Obtener solo los datos sensibles para la interfaz de prueba
+  Future<Map<String, String>> getSensitiveData() async {
+    Map<String, String> allValues = await _storage.readAll();
+    allValues.remove('session_token');
+    allValues.remove('session_closed_at');
+    return allValues;
+  }
+
   // =========================================================
   // MÉTODOS DE SESIÓN ANTIGUOS RESTAURADOS
   // =========================================================

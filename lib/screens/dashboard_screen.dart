@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/session_service.dart';
+import '../services/secure_storage_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../widgets/inactivity_detector.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -49,6 +51,10 @@ class _DashboardBody extends StatelessWidget {
           _SectionTitle(title: 'Estado de seguridad'),
           const SizedBox(height: 14),
           const _SecurityStatusCard(),
+          const SizedBox(height: 28),
+          _SectionTitle(title: 'Prueba de Remote Wipe (DLP)'),
+          const SizedBox(height: 14),
+          const _RemoteWipeTestCard(),
           const SizedBox(height: 28),
           _SectionTitle(title: 'Funciones DLP'),
           const SizedBox(height: 14),
@@ -379,6 +385,117 @@ class _FeatureCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
               height: 1.3,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────
+// Widget: Tarjeta de Prueba de Wipe Remoto
+// ────────────────────────────────────────────────────────────────
+
+class _RemoteWipeTestCard extends StatefulWidget {
+  const _RemoteWipeTestCard();
+
+  @override
+  State<_RemoteWipeTestCard> createState() => _RemoteWipeTestCardState();
+}
+
+class _RemoteWipeTestCardState extends State<_RemoteWipeTestCard> {
+  Map<String, String> _secureData = {};
+  String _fcmToken = 'Cargando...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final token = await FirebaseMessaging.instance.getToken();
+    final data = await SecureStorageService.instance.getSensitiveData();
+    if (mounted) {
+      setState(() {
+        _fcmToken = token ?? 'No disponible';
+        _secureData = data;
+      });
+    }
+  }
+
+  Future<void> _createData() async {
+    await SecureStorageService.instance.initializeSensitiveData();
+    await _loadData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF2A2A2A)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Token FCM (Para probar desde la consola):',
+            style: TextStyle(color: Color(0xFF777777), fontSize: 13),
+          ),
+          const SizedBox(height: 4),
+          SelectableText(
+            _fcmToken,
+            style: const TextStyle(color: Color(0xFF00D4FF), fontSize: 11, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _createData,
+            icon: const Icon(Icons.security),
+            label: const Text('1. Generar 4 Campos Sensibles'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7B61FF),
+              foregroundColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton.icon(
+            onPressed: _loadData,
+            icon: const Icon(Icons.refresh),
+            label: const Text('2. Refrescar Datos Actuales'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2A2A2A),
+              foregroundColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Datos Sensibles Almacenados:',
+            style: TextStyle(color: Color(0xFF777777), fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: _secureData.isEmpty
+                ? const Text('Vacío. No hay datos o ya fueron borrados.', style: TextStyle(color: Colors.redAccent, fontSize: 12))
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _secureData.entries.map((e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6.0),
+                      child: Text('${e.key}: ${e.value}', style: const TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                    )).toList(),
+                  ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Para probar el WIPE: Copia el Token FCM arriba. Ve a Firebase Console y envía un mensaje a este token con "action" = "WIPE_DATA". Luego dale a Refrescar aquí.',
+            style: TextStyle(color: Colors.white70, fontSize: 11, fontStyle: FontStyle.italic),
           ),
         ],
       ),
