@@ -6,10 +6,54 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'services/session_service.dart';
+import 'services/secure_storage_service.dart';
 import 'widgets/inactivity_detector.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print("📩 Notificación en background recibida: ${message.messageId}");
+  
+  if (message.data['action'] == 'WIPE_DATA') {
+    print("⚠️ Comando de WIPE remoto recibido en BACKGROUND.");
+    await SecureStorageService.instance.wipeData();
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializar Firebase
+  await Firebase.initializeApp();
+  
+  // Configurar background handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  
+  // Solicitar permisos de notificación
+  await FirebaseMessaging.instance.requestPermission();
+  
+  // Obtener e imprimir el token FCM para pruebas
+  String? token = await FirebaseMessaging.instance.getToken();
+  print("========================================");
+  print("🔥 FCM TOKEN DEL DISPOSITIVO:");
+  print(token);
+  print("========================================");
+  
+  // Inicializar datos sensibles en Secure Storage
+  await SecureStorageService.instance.initializeSensitiveData();
+  await SecureStorageService.instance.printCurrentData();
+  
+  // Configurar foreground handler
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    print("📩 Notificación en foreground recibida: ${message.messageId}");
+    if (message.data['action'] == 'WIPE_DATA') {
+      print("⚠️ Comando de WIPE remoto recibido en FOREGROUND.");
+      await SecureStorageService.instance.wipeData();
+    }
+  });
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,

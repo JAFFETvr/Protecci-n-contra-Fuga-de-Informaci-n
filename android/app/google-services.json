@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "622027963411",
+    "project_id": "nomadic-device-442318-r7",
+    "storage_bucket": "nomadic-device-442318-r7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:622027963411:android:4f9f52c3437385d04fd3e6",
+        "android_client_info": {
+          "package_name": "com.example.mi_app_dlp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBA2aICBMeSdMjBGnmyyq51-e9neSx8S3Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
