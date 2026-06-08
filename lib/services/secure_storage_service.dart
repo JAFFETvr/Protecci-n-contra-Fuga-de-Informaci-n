@@ -1,5 +1,12 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+class StoredSession {
+  final String token;
+  final DateTime closedAt;
+
+  StoredSession({required this.token, required this.closedAt});
+}
+
 class SecureStorageService {
   static final SecureStorageService instance = SecureStorageService._internal();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -31,5 +38,38 @@ class SecureStorageService {
   Future<void> printCurrentData() async {
     Map<String, String> allValues = await _storage.readAll();
     print('📊 Estado actual del Secure Storage: $allValues');
+  }
+
+  // =========================================================
+  // MÉTODOS DE SESIÓN ANTIGUOS RESTAURADOS
+  // =========================================================
+
+  Future<void> saveSession({
+    required String token,
+    required DateTime closedAt,
+  }) async {
+    await _storage.write(key: 'session_token', value: token);
+    await _storage.write(
+      key: 'session_closed_at',
+      value: closedAt.toIso8601String(),
+    );
+  }
+
+  Future<StoredSession?> readSession() async {
+    final token = await _storage.read(key: 'session_token');
+    final closedAtStr = await _storage.read(key: 'session_closed_at');
+
+    if (token != null && closedAtStr != null) {
+      return StoredSession(
+        token: token,
+        closedAt: DateTime.parse(closedAtStr),
+      );
+    }
+    return null;
+  }
+
+  Future<void> clearSession() async {
+    await _storage.delete(key: 'session_token');
+    await _storage.delete(key: 'session_closed_at');
   }
 }
