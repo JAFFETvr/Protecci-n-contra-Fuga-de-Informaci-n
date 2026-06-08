@@ -5,13 +5,55 @@ import 'dart:io';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/dashboard_screen.dart';
-import 'widgets/session_timeout_wrapper.dart';
+import 'services/session_service.dart';
+import 'services/secure_storage_service.dart';
+import 'widgets/inactivity_detector.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
-// Llave global para navegar sin context desde el timer
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print("📩 Notificación en background recibida: ${message.messageId}");
+  
+  if (message.data['action'] == 'WIPE_DATA') {
+    print("⚠️ Comando de WIPE remoto recibido en BACKGROUND.");
+    await SecureStorageService.instance.wipeData();
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializar Firebase
+  await Firebase.initializeApp();
+  
+  // Configurar background handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  
+  // Solicitar permisos de notificación
+  await FirebaseMessaging.instance.requestPermission();
+  
+  // Obtener e imprimir el token FCM para pruebas
+  String? token = await FirebaseMessaging.instance.getToken();
+  print("========================================");
+  print("🔥 FCM TOKEN DEL DISPOSITIVO:");
+  print(token);
+  print("========================================");
+  
+  // Inicializar datos sensibles en Secure Storage
+  await SecureStorageService.instance.initializeSensitiveData();
+  await SecureStorageService.instance.printCurrentData();
+  
+  // Configurar foreground handler
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    print("📩 Notificación en foreground recibida: ${message.messageId}");
+    if (message.data['action'] == 'WIPE_DATA') {
+      print("⚠️ Comando de WIPE remoto recibido en FOREGROUND.");
+      await SecureStorageService.instance.wipeData();
+    }
+  });
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -19,24 +61,25 @@ void main() async {
       systemNavigationBarColor: Color(0xFF0D0D0D),
     ),
   );
-  
+
   bool fakeGpsDetected = await isFakeGpsDetected();
-  
+
   runApp(MyApp(fakeGpsDetected: fakeGpsDetected));
 }
 
 Future<bool> isFakeGpsDetected() async {
+  if (Platform.isIOS) return false;
+
   try {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-    
-    if (permission == LocationPermission.denied || 
+
+    if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
       return false;
     }
-    
     try {
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -53,7 +96,7 @@ Future<bool> isFakeGpsDetected() async {
 
 class MyApp extends StatelessWidget {
   final bool fakeGpsDetected;
-  
+
   const MyApp({super.key, this.fakeGpsDetected = false});
 
   @override
@@ -67,27 +110,15 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    return SessionTimeoutWrapper(
-      timeout: const Duration(seconds: 15), // Tiempo de inactividad ajustable
-      onLogout: () {
-        // Redirigir al login y limpiar el historial de navegación
-        navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
-        
-        // Mostrar mensaje informativo
-        if (navigatorKey.currentContext != null) {
-          ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-            const SnackBar(
-              content: Text('Sesión cerrada por inactividad'),
-              backgroundColor: Color(0xFFFF4757),
-            ),
-          );
-        }
-      },
+    final navigatorKey = GlobalKey<NavigatorState>();
+    SessionService.instance.navigatorKey = navigatorKey;
+
+    return InactivityDetector(
       child: MaterialApp(
-        navigatorKey: navigatorKey, // Asignar la llave global aquí
         title: 'DLP Seguro',
         debugShowCheckedModeBanner: false,
         theme: _buildDarkTheme(),
+        navigatorKey: navigatorKey,
         initialRoute: '/login',
         routes: {
           '/login': (context) => const LoginScreen(),
@@ -117,7 +148,8 @@ class MyApp extends StatelessWidget {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -132,11 +164,13 @@ class MyApp extends StatelessWidget {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFFF4757), width: 1),
+          borderSide:
+              const BorderSide(color: Color(0xFFFF4757), width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFFF4757), width: 1.5),
+          borderSide:
+              const BorderSide(color: Color(0xFFFF4757), width: 1.5),
         ),
         labelStyle: const TextStyle(color: Color(0xFF777777)),
         errorStyle: const TextStyle(color: Color(0xFFFF4757)),
@@ -146,7 +180,8 @@ class MyApp extends StatelessWidget {
           backgroundColor: primary,
           foregroundColor: Colors.white,
           disabledBackgroundColor: primary.withAlpha(100),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 0,
           textStyle: const TextStyle(
