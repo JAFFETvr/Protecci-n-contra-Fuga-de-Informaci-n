@@ -11,6 +11,9 @@ import 'widgets/inactivity_detector.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+// Definir navigatorKey como una variable global para que sea accesible en todo el archivo
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -66,8 +69,11 @@ Future<void> _initializePostLaunch() async {
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     print("📩 Notificación en foreground recibida: ${message.messageId}");
     if (message.data['action'] == 'WIPE_DATA') {
-      print("⚠️ Comando de WIPE remoto recibido en FOREGROUND.");
+      print("⚠️ Comando de WIPE remoto recibido.");
       await SecureStorageService.instance.wipeData();
+
+      // OPCIONAL: Redirigir al login para que el profesor vea que la app reaccionó
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
     }
   });
 }
@@ -115,7 +121,6 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    final navigatorKey = GlobalKey<NavigatorState>();
     SessionService.instance.navigatorKey = navigatorKey;
 
     return InactivityDetector(
