@@ -17,7 +17,7 @@ class SecureStorageService {
 
   SecureStorageService._internal();
 
-  // Inicializa el almacenamiento seguro con datos de prueba
+  
   Future<void> initializeSensitiveData() async {
     print('🔑 Inicializando datos sensibles en almacenamiento seguro...');
     await _storage.write(key: 'ine_data', value: 'INE_FOTO_Y_SERIE_XYZ123');
@@ -27,20 +27,20 @@ class SecureStorageService {
     print('✅ Datos sensibles almacenados con éxito.');
   }
 
-  // Realiza el Remote Wipe eliminando todos los datos sensibles
+ 
   Future<void> wipeData() async {
     print('🚨 ALERTA: Iniciando Wipe Remoto (DLP)...');
     await _storage.deleteAll();
     print('💥 WIPE COMPLETADO: Todos los datos sensibles han sido eliminados del dispositivo.');
   }
 
-  // Método auxiliar para verificar los datos (solo para pruebas)
+
   Future<void> printCurrentData() async {
     Map<String, String> allValues = await _storage.readAll();
     print('📊 Estado actual del Secure Storage: $allValues');
   }
 
-  // Obtener solo los datos sensibles para la interfaz de prueba
+
   Future<Map<String, String>> getSensitiveData() async {
     Map<String, String> allValues = await _storage.readAll();
     allValues.remove('session_token');
