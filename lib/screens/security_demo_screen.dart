@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/sensitive_data_processor.dart';
+import '../services/network_service.dart';
 
 /// SecurityDemoScreen - Pantalla de demostración de clases sensibles
 /// Muestra en tiempo real el uso de AuthService y SensitiveDataProcessor.
@@ -19,7 +20,7 @@ class _SecurityDemoScreenState extends State<SecurityDemoScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -41,6 +42,7 @@ class _SecurityDemoScreenState extends State<SecurityDemoScreen>
           tabs: const [
             Tab(icon: Icon(Icons.person_rounded), text: 'Autenticación'),
             Tab(icon: Icon(Icons.credit_card_rounded), text: 'Datos Sensibles'),
+            Tab(icon: Icon(Icons.https_rounded), text: 'SSL Pinning'),
           ],
         ),
       ),
@@ -49,6 +51,7 @@ class _SecurityDemoScreenState extends State<SecurityDemoScreen>
         children: const [
           _AuthDemoTab(),
           _SensitiveDataTab(),
+          _SslPinningTab(),
         ],
       ),
     );
@@ -362,6 +365,159 @@ class _SensitiveDataTabState extends State<_SensitiveDataTab> {
               ('Servicio KYC', SensitiveDataProcessor.instance.kycServiceUrl),
               ('Versión Política DLP', SensitiveDataProcessor.instance.dlpPolicyVersion),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── TAB 3: Demostración de SSL/TLS Pinning ──────────────────────────────────
+
+class _SslPinningTab extends StatefulWidget {
+  const _SslPinningTab();
+
+  @override
+  State<_SslPinningTab> createState() => _SslPinningTabState();
+}
+
+class _SslPinningTabState extends State<_SslPinningTab> {
+  bool _pinningEnabled = true;
+  bool _isLoading = false;
+  String _result = '';
+  bool _isSuccess = false;
+
+  Future<void> _testConnection() async {
+    setState(() {
+      _isLoading = true;
+      _result = '';
+    });
+
+    try {
+      await NetworkService.instance.configure(pinningEnabled: _pinningEnabled);
+      final response = await NetworkService.instance.getSecure('/todos/1');
+      setState(() {
+        _isSuccess = true;
+        _result = '✅ Conexión exitosa (HTTP ${response.statusCode})\n'
+            'Certificado del servidor validado correctamente.\n'
+            'Respuesta: ${response.data}';
+      });
+    } on SslPinningException catch (e) {
+      setState(() {
+        _isSuccess = false;
+        _result = '🚨 ${e.message}';
+      });
+    } catch (e) {
+      setState(() {
+        _isSuccess = false;
+        _result = '❌ Error de red: $e';
+      });
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00D4FF).withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF00D4FF).withAlpha(60)),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Icon(Icons.https_rounded, color: Color(0xFF00D4FF), size: 16),
+                  SizedBox(width: 8),
+                  Text('Clase: NetworkService', style: TextStyle(color: Color(0xFF00D4FF), fontSize: 13, fontWeight: FontWeight.bold)),
+                ]),
+                SizedBox(height: 6),
+                Text(
+                  'Con pinning activo, la app solo confía en el certificado de '
+                  'jsonplaceholder.typicode.com almacenado localmente. Un proxy '
+                  'MitM (Charles, HTTP Toolkit, ZAP) que intercepte el tráfico será '
+                  'rechazado aunque su CA esté instalada como confiable en el dispositivo.',
+                  style: TextStyle(color: Color(0xFF999999), fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF2A2A2A)),
+            ),
+            child: SwitchListTile(
+              value: _pinningEnabled,
+              onChanged: _isLoading ? null : (v) => setState(() => _pinningEnabled = v),
+              activeThumbColor: const Color(0xFF00C853),
+              title: const Text('SSL Pinning activo', style: TextStyle(color: Colors.white, fontSize: 14)),
+              subtitle: Text(
+                _pinningEnabled
+                    ? 'Solo se confía en el certificado pineado'
+                    : 'Vulnerable: confía en el almacén del sistema (permite MitM)',
+                style: const TextStyle(color: Color(0xFF777777), fontSize: 11),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: _isLoading ? null : _testConnection,
+              icon: _isLoading
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.wifi_tethering_rounded),
+              label: Text(_isLoading ? 'Conectando...' : 'Probar Conexión Segura'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D4FF),
+                foregroundColor: Colors.black,
+              ),
+            ),
+          ),
+          if (_result.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _isSuccess
+                    ? const Color(0xFF00C853).withAlpha(20)
+                    : const Color(0xFFFF4757).withAlpha(20),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _isSuccess
+                      ? const Color(0xFF00C853).withAlpha(60)
+                      : const Color(0xFFFF4757).withAlpha(60),
+                ),
+              ),
+              child: Text(
+                _result,
+                style: TextStyle(
+                  color: _isSuccess ? const Color(0xFF00C853) : const Color(0xFFFF4757),
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+          const Text(
+            'Prueba de Concepto (PoC): configura un proxy (Charles / HTTP Toolkit / '
+            'OWASP ZAP) en el dispositivo e instala su CA como confiable. Con el '
+            'switch desactivado, el proxy podrá leer las peticiones. Con el switch '
+            'activado, el handshake TLS debe fallar y verás el error controlado arriba.',
+            style: TextStyle(color: Colors.white70, fontSize: 11, fontStyle: FontStyle.italic),
           ),
         ],
       ),
