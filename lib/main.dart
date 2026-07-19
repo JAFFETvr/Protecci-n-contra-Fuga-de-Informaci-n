@@ -5,6 +5,7 @@ import 'dart:io';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/security_demo_screen.dart';
 import 'services/session_service.dart';
 import 'services/secure_storage_service.dart';
 import 'widgets/inactivity_detector.dart';
@@ -134,6 +135,7 @@ class MyApp extends StatelessWidget {
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
           '/dashboard': (context) => const DashboardScreen(),
+          '/security': (context) => const SecurityDemoScreen(),
         },
       ),
     );

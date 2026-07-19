@@ -56,6 +56,10 @@ class _DashboardBody extends StatelessWidget {
           const SizedBox(height: 14),
           const _RemoteWipeTestCard(),
           const SizedBox(height: 28),
+          _SectionTitle(title: 'Demo de Ofuscación'),
+          const SizedBox(height: 14),
+          _SecurityDemoButton(),
+          const SizedBox(height: 28),
           _SectionTitle(title: 'Funciones DLP'),
           const SizedBox(height: 14),
           const _FeatureGrid(),
@@ -498,6 +502,63 @@ class _RemoteWipeTestCardState extends State<_RemoteWipeTestCard> {
             style: TextStyle(color: Colors.white70, fontSize: 11, fontStyle: FontStyle.italic),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────
+// Widget: Botón de navegación al Demo de Seguridad
+// ────────────────────────────────────────────────────────────────
+
+class _SecurityDemoButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/security'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF7B61FF).withAlpha(80)),
+        ),
+        child: const Row(
+          children: [
+            Stack(
+              children: [
+                Icon(Icons.security_rounded, color: Color(0xFF7B61FF), size: 40),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Icon(Icons.code_rounded, color: Color(0xFF00D4FF), size: 18),
+                ),
+              ],
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Demo de Ofuscación de Código',
+                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Prueba AuthService y SensitiveDataProcessor · Compara antes/después de ofuscar',
+                    style: TextStyle(color: Color(0xFF777777), fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: Color(0xFF555555)),
+          ],
+        ),
       ),
     );
   }

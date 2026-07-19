@@ -9,7 +9,7 @@ plugins {
 android {
     namespace = "com.example.mi_app_dlp"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -32,9 +32,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // APK NORMAL (sin ofuscación) — para comparar con JADX
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // APK OFUSCADO — R8 activo con ProGuard rules
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
